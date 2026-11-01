@@ -44,6 +44,9 @@ dependencies:
   uuid: ^4.6.0
   intl: ^0.20.3
   interactive_3d: ^2.5.0
+  image_picker: ^1.2.4
+  pdf: ^3.13.1
+  printing: ^5.15.1
 
 dev_dependencies:
   flutter_test:

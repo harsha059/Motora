@@ -8,8 +8,10 @@ import '../../../core/database/app_database.dart';
 import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/priority_badge.dart';
 import '../../../core/widgets/status_pill.dart';
+import '../data/attachment_repository.dart';
 import '../data/issue_repository.dart';
 import '../domain/issue_model.dart';
+import 'widgets/photo_attachment_picker.dart';
 
 class IssueDetailSheet extends ConsumerWidget {
   final IssueModel issue;
@@ -28,10 +30,11 @@ class IssueDetailSheet extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final component = VehicleComponentsCatalog.getById(issue.componentId);
+    final attachmentsAsync = ref.watch(issueAttachmentsProvider(issue.id));
 
     return Container(
       constraints: BoxConstraints(
-        maxHeight: MediaQuery.of(context).size.height * 0.85,
+        maxHeight: MediaQuery.of(context).size.height * 0.88,
       ),
       decoration: const BoxDecoration(
         color: AppColors.surface,
@@ -223,7 +226,7 @@ class IssueDetailSheet extends ConsumerWidget {
 
                     // Description Section
                     const Text(
-                      'Observations & Details',
+                      'Observations & Symptoms',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w700,
@@ -248,7 +251,85 @@ class IssueDetailSheet extends ConsumerWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 18),
+
+                    // Photo Attachments Section
+                    attachmentsAsync.when(
+                      data: (attachments) => PhotoAttachmentPicker(
+                        attachments: attachments,
+                        onPickImage: (source) async {
+                          await ref.read(attachmentRepositoryProvider).captureAndSaveImage(
+                                issueId: issue.id,
+                                source: source,
+                              );
+                        },
+                        onRemoveAttachment: (id) async {
+                          await ref.read(attachmentRepositoryProvider).deleteAttachment(id);
+                        },
+                      ),
+                      loading: () => const SizedBox(
+                        height: 50,
+                        child: Center(child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.accent)),
+                      ),
+                      error: (_, _) => const SizedBox.shrink(),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Past Technician History if any
+                    if (issue.technicianRemarks != null && issue.technicianRemarks!.isNotEmpty) ...[
+                      const Text(
+                        'Past Technician Remarks',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.secondaryText,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: AppColors.elevatedSurface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppColors.cardBorderActive),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.engineering_rounded, size: 16, color: AppColors.accent),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'Technician Diagnosis',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.accent,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              issue.technicianRemarks!,
+                              style: const TextStyle(fontSize: 13, color: AppColors.primaryText, height: 1.4),
+                            ),
+                            if (issue.resolutionNotes != null && issue.resolutionNotes!.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              const Divider(height: 1),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Work Performed: ${issue.resolutionNotes}',
+                                style: const TextStyle(fontSize: 12, color: AppColors.secondaryText),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Change Status Action
                     const Text(

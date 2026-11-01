@@ -1,11 +1,14 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_spacing.dart';
 import '../../../../core/constants/vehicle_components.dart';
 import '../../../../core/database/app_database.dart';
+import '../../../issues/data/attachment_repository.dart';
 import '../../../issues/data/issue_repository.dart';
 import '../../../issues/domain/issue_model.dart';
 
@@ -52,6 +55,25 @@ class _QuickAddIssueSheetState extends ConsumerState<QuickAddIssueSheet> {
     super.dispose();
   }
 
+  final List<XFile> _pendingPhotos = [];
+  final ImagePicker _imagePicker = ImagePicker();
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    final picked = await _imagePicker.pickImage(
+      source: source,
+      maxWidth: 1920,
+      maxHeight: 1080,
+      imageQuality: 85,
+    );
+    if (picked != null) {
+      setState(() => _pendingPhotos.add(picked));
+    }
+  }
+
+  void _removePhoto(int index) {
+    setState(() => _pendingPhotos.removeAt(index));
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -59,8 +81,9 @@ class _QuickAddIssueSheetState extends ConsumerState<QuickAddIssueSheet> {
 
     try {
       final now = DateTime.now();
+      final issueId = const Uuid().v4();
       final newIssue = IssueModel(
-        id: const Uuid().v4(),
+        id: issueId,
         vehicleId: 'mg_comet_ev',
         componentId: _selectedComponentId,
         title: _titleController.text.trim(),
@@ -74,6 +97,14 @@ class _QuickAddIssueSheetState extends ConsumerState<QuickAddIssueSheet> {
       );
 
       await ref.read(issueRepositoryProvider).createIssue(newIssue);
+
+      // Save all attached photos to persistent storage
+      for (final photo in _pendingPhotos) {
+        await ref.read(attachmentRepositoryProvider).saveDirectAttachment(
+              issueId: issueId,
+              sourceFilePath: photo.path,
+            );
+      }
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -475,6 +506,74 @@ class _QuickAddIssueSheetState extends ConsumerState<QuickAddIssueSheet> {
                           return null;
                         },
                       ),
+                      const SizedBox(height: 18),
+
+                      // Photo Attachments Section
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'Attach Photographs',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: AppColors.secondaryText),
+                          ),
+                          Row(
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.camera_alt_rounded, size: 20, color: AppColors.accent),
+                                tooltip: 'Take Photo',
+                                onPressed: () => _pickPhoto(ImageSource.camera),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.photo_library_rounded, size: 20, color: AppColors.accent),
+                                tooltip: 'Pick from Gallery',
+                                onPressed: () => _pickPhoto(ImageSource.gallery),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                      if (_pendingPhotos.isNotEmpty) ...[
+                        const SizedBox(height: 6),
+                        SizedBox(
+                          height: 75,
+                          child: ListView.separated(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: _pendingPhotos.length,
+                            separatorBuilder: (_, _) => const SizedBox(width: 8),
+                            itemBuilder: (context, index) {
+                              final photo = _pendingPhotos[index];
+                              return Stack(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.file(
+                                      File(photo.path),
+                                      width: 75,
+                                      height: 75,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 3,
+                                    right: 3,
+                                    child: InkWell(
+                                      onTap: () => _removePhoto(index),
+                                      child: Container(
+                                        padding: const EdgeInsets.all(2),
+                                        decoration: const BoxDecoration(
+                                          color: Colors.black87,
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: const Icon(Icons.close_rounded, size: 12, color: Colors.white),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 24),
 
                       // Submit Button

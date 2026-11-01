@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/home/presentation/home_screen.dart';
 import '../../features/issues/presentation/issues_screen.dart';
+import '../../features/service/presentation/prepare_service_screen.dart';
+import '../../features/service/presentation/service_report_pdf_screen.dart';
 import '../../features/service/presentation/service_screen.dart';
+import '../../features/service/presentation/service_visit_detail_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/vehicle/presentation/vehicle_screen.dart';
 import 'scaffold_with_nav_bar.dart';
@@ -54,7 +57,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
               ),
             ],
           ),
-          // 4. Service
+          // 4. Service (with prepare, visit detail, and report subroutes)
           StatefulShellBranch(
             routes: [
               GoRoute(
@@ -62,6 +65,26 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 pageBuilder: (context, state) => const NoTransitionPage(
                   child: ServiceScreen(),
                 ),
+                routes: [
+                  GoRoute(
+                    path: 'prepare',
+                    builder: (context, state) => const PrepareServiceScreen(),
+                  ),
+                  GoRoute(
+                    path: 'visit/:id',
+                    builder: (context, state) {
+                      final visitId = state.pathParameters['id']!;
+                      return ServiceVisitDetailScreen(visitId: visitId);
+                    },
+                  ),
+                  GoRoute(
+                    path: 'report/:id',
+                    builder: (context, state) {
+                      final visitId = state.pathParameters['id']!;
+                      return ServiceReportPdfScreen(visitId: visitId);
+                    },
+                  ),
+                ],
               ),
             ],
           ),
