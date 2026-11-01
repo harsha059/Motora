@@ -8,6 +8,8 @@ class VehicleHeroCard extends StatelessWidget {
   final int openIssuesCount;
   final String? lastServiceVisitText;
   final String? nextServiceReminderText;
+  final String vehicleName;
+  final String vehicleSubtitle;
 
   const VehicleHeroCard({
     super.key,
@@ -15,6 +17,8 @@ class VehicleHeroCard extends StatelessWidget {
     this.openIssuesCount = 0,
     this.lastServiceVisitText,
     this.nextServiceReminderText,
+    this.vehicleName = 'MG Comet EV',
+    this.vehicleSubtitle = 'Plush Edition • Dual Screen Cockpit',
   });
 
   @override
@@ -102,9 +106,9 @@ class VehicleHeroCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'MG Comet EV',
-                      style: TextStyle(
+                    Text(
+                      vehicleName,
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.5,
@@ -113,7 +117,7 @@ class VehicleHeroCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Plush Edition • Dual Screen Cockpit',
+                      vehicleSubtitle,
                       style: TextStyle(
                         fontSize: 13,
                         color: AppColors.secondaryText.withValues(alpha: 0.9),

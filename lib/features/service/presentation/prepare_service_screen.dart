@@ -10,6 +10,7 @@ import '../../../core/widgets/glass_card.dart';
 import '../../../core/widgets/priority_badge.dart';
 import '../../issues/data/issue_repository.dart';
 import '../../issues/domain/issue_model.dart';
+import '../../vehicle/data/vehicle_repository.dart';
 import '../data/service_repository.dart';
 
 class PrepareServiceScreen extends ConsumerStatefulWidget {
@@ -76,7 +77,9 @@ class _PrepareServiceScreenState extends ConsumerState<PrepareServiceScreen> {
 
     try {
       final odometer = int.tryParse(_odometerController.text.trim()) ?? 0;
+      final activeVehicleId = ref.read(activeVehicleIdProvider);
       final visitId = await ref.read(serviceRepositoryProvider).createServiceVisit(
+            vehicleId: activeVehicleId,
             serviceCentre: _serviceCentreController.text.trim(),
             visitDate: _appointmentDate,
             odometerReading: odometer,
