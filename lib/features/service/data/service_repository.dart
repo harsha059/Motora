@@ -237,6 +237,20 @@ class ServiceRepository {
       }
     });
   }
+  Stream<ServiceVisitModel?> watchLatestCompletedVisit({String? vehicleId}) {
+    final query = _db.select(_db.serviceVisits)
+      ..where((t) => t.status.equalsValue(ServiceVisitStatus.completed))
+      ..orderBy([
+        (t) => OrderingTerm(expression: t.completedAt, mode: OrderingMode.desc),
+      ])
+      ..limit(1);
+
+    if (vehicleId != null) {
+      query.where((t) => t.vehicleId.equals(vehicleId));
+    }
+
+    return query.watchSingleOrNull().map((row) => row != null ? _visitToDomain(row) : null);
+  }
 }
 
 final serviceRepositoryProvider = Provider<ServiceRepository>((ref) {
@@ -252,6 +266,11 @@ final allServiceVisitsProvider = StreamProvider<List<ServiceVisitModel>>((ref) {
 final completedServiceVisitsProvider = StreamProvider<List<ServiceVisitModel>>((ref) {
   final repo = ref.watch(serviceRepositoryProvider);
   return repo.watchCompletedVisits();
+});
+
+final latestCompletedVisitProvider = StreamProvider<ServiceVisitModel?>((ref) {
+  final repo = ref.watch(serviceRepositoryProvider);
+  return repo.watchLatestCompletedVisit();
 });
 
 final activeServiceVisitProvider = StreamProvider<ServiceVisitModel?>((ref) {

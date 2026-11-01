@@ -13,6 +13,8 @@ class IssueModel {
   final IssueStatus status;
   final String? technicianRemarks;
   final String? resolutionNotes;
+  final bool isRecurring;
+  final String? parentIssueId;
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -29,6 +31,8 @@ class IssueModel {
     this.status = IssueStatus.open,
     this.technicianRemarks,
     this.resolutionNotes,
+    this.isRecurring = false,
+    this.parentIssueId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -46,6 +50,8 @@ class IssueModel {
     IssueStatus? status,
     String? technicianRemarks,
     String? resolutionNotes,
+    bool? isRecurring,
+    String? parentIssueId,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -62,8 +68,38 @@ class IssueModel {
       status: status ?? this.status,
       technicianRemarks: technicianRemarks ?? this.technicianRemarks,
       resolutionNotes: resolutionNotes ?? this.resolutionNotes,
+      isRecurring: isRecurring ?? this.isRecurring,
+      parentIssueId: parentIssueId ?? this.parentIssueId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
+}
+
+class IssueServiceHistoryRecord {
+  final String visitId;
+  final String serviceCentre;
+  final DateTime visitDate;
+  final int odometerReading;
+  final String? technicianName;
+  final String? technicianRemarks;
+  final String? workPerformed;
+  final String? partsReplaced;
+  final VisitIssueResolution resolutionStatus;
+  final bool followUpRequired;
+  final bool isCompleted;
+
+  const IssueServiceHistoryRecord({
+    required this.visitId,
+    required this.serviceCentre,
+    required this.visitDate,
+    required this.odometerReading,
+    this.technicianName,
+    this.technicianRemarks,
+    this.workPerformed,
+    this.partsReplaced,
+    required this.resolutionStatus,
+    required this.followUpRequired,
+    required this.isCompleted,
+  });
 }

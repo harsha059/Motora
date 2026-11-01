@@ -34,6 +34,8 @@ class IssueRepository {
       status: row.status,
       technicianRemarks: row.technicianRemarks,
       resolutionNotes: row.resolutionNotes,
+      isRecurring: row.isRecurring,
+      parentIssueId: row.parentIssueId,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
     );
@@ -96,6 +98,8 @@ class IssueRepository {
             status: Value(issue.status),
             technicianRemarks: Value(issue.technicianRemarks),
             resolutionNotes: Value(issue.resolutionNotes),
+            isRecurring: Value(issue.isRecurring),
+            parentIssueId: Value(issue.parentIssueId),
             createdAt: issue.createdAt,
             updatedAt: issue.updatedAt,
           ),
@@ -115,6 +119,8 @@ class IssueRepository {
             technicianRemarks: Value(issue.technicianRemarks),
             resolutionNotes: Value(issue.resolutionNotes),
             photoUrlsJson: Value(issue.photoUrls.isNotEmpty ? jsonEncode(issue.photoUrls) : null),
+            isRecurring: Value(issue.isRecurring),
+            parentIssueId: Value(issue.parentIssueId),
             updatedAt: Value(DateTime.now()),
           ),
         );
@@ -127,6 +133,66 @@ class IssueRepository {
             updatedAt: Value(DateTime.now()),
           ),
         );
+  }
+
+  Future<void> markIssueAsRecurring(String id, {String? parentIssueId}) async {
+    await (_db.update(_db.issues)..where((t) => t.id.equals(id))).write(
+          IssuesCompanion(
+            isRecurring: const Value(true),
+            parentIssueId: Value(parentIssueId),
+            updatedAt: Value(DateTime.now()),
+          ),
+        );
+  }
+
+  Future<void> reopenIssue(String id, {String? reopenReason}) async {
+    final existing = await (_db.select(_db.issues)..where((t) => t.id.equals(id))).getSingleOrNull();
+    if (existing == null) return;
+
+    final now = DateTime.now();
+    String updatedRemarks = existing.technicianRemarks ?? '';
+    if (reopenReason != null && reopenReason.trim().isNotEmpty) {
+      final dateTag = '[Reopened on ${now.day}/${now.month}/${now.year}]';
+      updatedRemarks = updatedRemarks.isEmpty
+          ? '$dateTag $reopenReason'
+          : '$updatedRemarks\n$dateTag $reopenReason';
+    }
+
+    await (_db.update(_db.issues)..where((t) => t.id.equals(id))).write(
+          IssuesCompanion(
+            status: const Value(IssueStatus.open),
+            isRecurring: const Value(true),
+            technicianRemarks: Value(updatedRemarks.isNotEmpty ? updatedRemarks : existing.technicianRemarks),
+            updatedAt: Value(now),
+          ),
+        );
+  }
+
+  Future<List<IssueServiceHistoryRecord>> getHistoricalServiceVisitsForIssue(String issueId) async {
+    final visitIssues = await (_db.select(_db.serviceVisitIssues)..where((t) => t.issueId.equals(issueId))).get();
+    final List<IssueServiceHistoryRecord> records = [];
+
+    for (final vi in visitIssues) {
+      final visit = await (_db.select(_db.serviceVisits)..where((t) => t.id.equals(vi.serviceVisitId))).getSingleOrNull();
+      if (visit != null) {
+        records.add(IssueServiceHistoryRecord(
+          visitId: visit.id,
+          serviceCentre: visit.serviceCentre,
+          visitDate: visit.visitDate,
+          odometerReading: visit.odometerReading,
+          technicianName: visit.technicianName,
+          technicianRemarks: vi.technicianRemarks,
+          workPerformed: vi.workPerformed,
+          partsReplaced: vi.partsReplaced,
+          resolutionStatus: vi.resolutionStatus,
+          followUpRequired: vi.followUpRequired,
+          isCompleted: visit.status == ServiceVisitStatus.completed,
+        ));
+      }
+    }
+
+    records.sort((a, b) => b.visitDate.compareTo(a.visitDate));
+    return records;
   }
 
   Future<void> deleteIssue(String id) async {
@@ -206,4 +272,9 @@ final recentIssuesProvider = StreamProvider<List<IssueModel>>((ref) {
 final openIssuesProvider = StreamProvider<List<IssueModel>>((ref) {
   final repo = ref.watch(issueRepositoryProvider);
   return repo.watchOpenIssues();
+});
+
+final issueServiceHistoryProvider = FutureProvider.family<List<IssueServiceHistoryRecord>, String>((ref, issueId) {
+  final repo = ref.watch(issueRepositoryProvider);
+  return repo.getHistoricalServiceVisitsForIssue(issueId);
 });

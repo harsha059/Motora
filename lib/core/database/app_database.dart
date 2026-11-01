@@ -48,6 +48,8 @@ class Issues extends Table {
   IntColumn get status => intEnum<IssueStatus>().withDefault(const Constant(0))();
   TextColumn get technicianRemarks => text().nullable()();
   TextColumn get resolutionNotes => text().nullable()();
+  BoolColumn get isRecurring => boolean().withDefault(const Constant(false))();
+  TextColumn get parentIssueId => text().nullable()();
   DateTimeColumn get createdAt => dateTime()();
   DateTimeColumn get updatedAt => dateTime()();
 
@@ -106,7 +108,7 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.e);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -118,6 +120,10 @@ class AppDatabase extends _$AppDatabase {
             await m.createTable(serviceVisits);
             await m.createTable(serviceVisitIssues);
             await m.createTable(issueAttachments);
+          }
+          if (from < 3) {
+            await m.addColumn(issues, issues.isRecurring);
+            await m.addColumn(issues, issues.parentIssueId);
           }
         },
       );

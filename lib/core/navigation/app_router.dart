@@ -51,9 +51,12 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             routes: [
               GoRoute(
                 path: '/issues',
-                pageBuilder: (context, state) => const NoTransitionPage(
-                  child: IssuesScreen(),
-                ),
+                pageBuilder: (context, state) {
+                  final priorityStr = state.uri.queryParameters['priority'];
+                  return NoTransitionPage(
+                    child: IssuesScreen(initialPriorityFilter: priorityStr),
+                  );
+                },
               ),
             ],
           ),
@@ -68,7 +71,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
                 routes: [
                   GoRoute(
                     path: 'prepare',
-                    builder: (context, state) => const PrepareServiceScreen(),
+                    builder: (context, state) {
+                      final preselected = state.extra as List<String>?;
+                      return PrepareServiceScreen(preselectedIssueIds: preselected);
+                    },
                   ),
                   GoRoute(
                     path: 'visit/:id',

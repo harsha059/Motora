@@ -5,9 +5,11 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/database/app_database.dart';
 import '../../issues/data/issue_repository.dart';
-import 'widgets/issue_summary_cards.dart';
+import '../../service/data/service_repository.dart';
+import 'widgets/active_defect_radar.dart';
 import 'widgets/next_service_card.dart';
 import 'widgets/quick_add_issue_sheet.dart';
+import 'widgets/quick_dashboard_actions.dart';
 import 'widgets/recent_issues_section.dart';
 import 'widgets/vehicle_hero_card.dart';
 
@@ -28,10 +30,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
+  String _getTimeGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) {
+      return 'Good morning';
+    } else if (hour < 17) {
+      return 'Good afternoon';
+    } else {
+      return 'Good evening';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final allIssuesAsync = ref.watch(allIssuesProvider);
     final recentIssuesAsync = ref.watch(recentIssuesProvider);
+    final latestVisitAsync = ref.watch(latestCompletedVisitProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -42,6 +56,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           onRefresh: () async {
             ref.invalidate(allIssuesProvider);
             ref.invalidate(recentIssuesProvider);
+            ref.invalidate(latestCompletedVisitProvider);
           },
           child: SingleChildScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
@@ -49,30 +64,65 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Top Header: Welcome & Quick-Add Button
-                _buildHeader(context),
+                // Top Header: Time-based Greeting & Vehicle Identifier & Odometer
+                latestVisitAsync.when(
+                  data: (latestVisit) => _buildHeader(
+                    context,
+                    odometerReading: latestVisit?.odometerReading ?? 4850,
+                  ),
+                  loading: () => _buildHeader(context, odometerReading: 4850),
+                  error: (_, _) => _buildHeader(context, odometerReading: 4850),
+                ),
                 const SizedBox(height: 18),
 
                 // Vehicle Hero Card (MG Comet EV)
-                VehicleHeroCard(
-                  onInspect3D: () => context.go('/vehicle'),
-                ),
-                const SizedBox(height: 20),
-
-                // Issue Counters & Severity Summary
                 allIssuesAsync.when(
-                  data: (issues) => IssueSummaryCards(
-                    issues: issues,
-                    onViewAllIssues: () => context.go('/issues'),
+                  data: (issues) {
+                    final openCount = issues.where((i) => i.status != IssueStatus.resolved).length;
+                    final latestVisit = latestVisitAsync.value;
+                    final lastServiceStr = latestVisit != null
+                        ? '${DateFormat('dd MMM yyyy').format(latestVisit.visitDate)} (${NumberFormat('#,###').format(latestVisit.odometerReading)} km)'
+                        : 'None logged yet';
+
+                    return VehicleHeroCard(
+                      openIssuesCount: openCount,
+                      lastServiceVisitText: lastServiceStr,
+                      nextServiceReminderText: '10,000 km / 1st Year Annual EV Inspection',
+                      onInspect3D: () => context.go('/vehicle'),
+                    );
+                  },
+                  loading: () => VehicleHeroCard(
+                    onInspect3D: () => context.go('/vehicle'),
+                  ),
+                  error: (_, _) => VehicleHeroCard(
+                    onInspect3D: () => context.go('/vehicle'),
+                  ),
+                ),
+                const SizedBox(height: 16),
+
+                // Quick Actions: Log Issue & Prepare for Service
+                QuickDashboardActions(
+                  onLogIssue: () => QuickAddIssueSheet.show(context),
+                  onPrepareService: () => context.push('/service/prepare'),
+                ),
+                const SizedBox(height: 18),
+
+                // Active Defect Radar (Signature MyGarage Feature)
+                allIssuesAsync.when(
+                  data: (issues) => ActiveDefectRadar(
+                    allIssues: issues,
+                    onPriorityTap: (priority) {
+                      context.go('/issues?priority=${priority.name}');
+                    },
                   ),
                   loading: () => const Center(
                     child: Padding(
-                      padding: EdgeInsets.all(16.0),
+                      padding: EdgeInsets.all(20.0),
                       child: CircularProgressIndicator(color: AppColors.accent),
                     ),
                   ),
                   error: (e, _) => Center(
-                    child: Text('Error loading summary: $e', style: const TextStyle(color: AppColors.critical)),
+                    child: Text('Error loading radar: $e', style: const TextStyle(color: AppColors.critical)),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -83,7 +133,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     final openCount = issues.where((i) => i.status != IssueStatus.resolved).length;
                     return NextServiceCard(
                       openIssuesCount: openCount,
-                      onPrepareService: () => context.go('/service'),
+                      onPrepareService: () => context.push('/service/prepare'),
                     );
                   },
                   loading: () => const SizedBox.shrink(),
@@ -91,7 +141,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 const SizedBox(height: 24),
 
-                // Recent Issues Section
+                // Recent Issues Section (Latest 5 or Empty State)
                 recentIssuesAsync.when(
                   data: (recent) => RecentIssuesSection(
                     issues: recent,
@@ -128,11 +178,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    final today = DateFormat('EEEE, d MMMM').format(DateTime.now());
+  Widget _buildHeader(BuildContext context, {required int odometerReading}) {
+    final greeting = _getTimeGreeting();
+    final odoFormatted = NumberFormat('#,###').format(odometerReading);
 
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -149,7 +201,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  today.toUpperCase(),
+                  '$greeting • MG COMET EV'.toUpperCase(),
                   style: const TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.w700,
@@ -160,27 +212,78 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               ],
             ),
             const SizedBox(height: 4),
-            const Text(
-              'MyGarage',
-              style: TextStyle(
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.6,
-                color: AppColors.primaryText,
-              ),
+            Row(
+              children: [
+                const Text(
+                  'MyGarage',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                    color: AppColors.primaryText,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: AppColors.accentDim.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(4),
+                    border: Border.all(color: AppColors.accent.withValues(alpha: 0.3)),
+                  ),
+                  child: const Text(
+                    'KA 01 MG 2024',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.accent,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        // Fast Action Button to add issue
-        IconButton(
-          onPressed: () => QuickAddIssueSheet.show(context),
-          style: IconButton.styleFrom(
-            backgroundColor: AppColors.elevatedSurface,
-            side: const BorderSide(color: AppColors.cardBorder),
-            padding: const EdgeInsets.all(12),
+        // Odometer Pill Badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: AppColors.elevatedSurface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: AppColors.cardBorder),
           ),
-          icon: const Icon(Icons.add_circle_outline_rounded, color: AppColors.accent, size: 22),
-          tooltip: 'Quick Add Issue',
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text(
+                'ODOMETER',
+                style: TextStyle(
+                  fontSize: 9.5,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.8,
+                  color: AppColors.tertiaryText,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.speed_rounded, size: 14, color: AppColors.accent),
+                  const SizedBox(width: 4),
+                  Text(
+                    '$odoFormatted km',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primaryText,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ],
     );

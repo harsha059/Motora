@@ -11,6 +11,8 @@ import '../../../../core/database/app_database.dart';
 import '../../../issues/data/attachment_repository.dart';
 import '../../../issues/data/issue_repository.dart';
 import '../../../issues/domain/issue_model.dart';
+import '../../../issues/domain/recurring_issue_detector.dart';
+import '../../../issues/presentation/widgets/recurring_issue_suggestion_banner.dart';
 
 class QuickAddIssueSheet extends ConsumerStatefulWidget {
   final String? initialComponentId;
@@ -41,11 +43,16 @@ class _QuickAddIssueSheetState extends ConsumerState<QuickAddIssueSheet> {
   DateTime _dateNoticed = DateTime.now();
   bool _isSubmitting = false;
 
+  bool _isRecurring = false;
+  String? _parentIssueId;
+  bool _dismissedRecurringSuggestion = false;
+
   @override
   void initState() {
     super.initState();
     _selectedComponentId = widget.initialComponentId ??
         VehicleComponentsCatalog.mgCometComponents.first.id;
+    _titleController.addListener(() => setState(() {}));
   }
 
   @override
@@ -92,6 +99,8 @@ class _QuickAddIssueSheetState extends ConsumerState<QuickAddIssueSheet> {
         dateNoticed: _dateNoticed,
         frequency: _selectedFrequency,
         status: IssueStatus.open,
+        isRecurring: _isRecurring,
+        parentIssueId: _parentIssueId,
         createdAt: now,
         updatedAt: now,
       );
@@ -147,6 +156,7 @@ class _QuickAddIssueSheetState extends ConsumerState<QuickAddIssueSheet> {
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).viewInsets.bottom;
+    final allIssuesAsync = ref.watch(allIssuesProvider);
 
     return Container(
       constraints: BoxConstraints(
@@ -309,7 +319,70 @@ class _QuickAddIssueSheetState extends ConsumerState<QuickAddIssueSheet> {
                           ),
                         ),
                       ),
-                      const SizedBox(height: 18),
+                      const SizedBox(height: 12),
+
+                      // Recurring Candidate Banner or Confirmed Recurring Badge
+                      if (_isRecurring) ...[
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: AppColors.medium.withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.medium.withValues(alpha: 0.5)),
+                          ),
+                          child: const Row(
+                            children: [
+                              Icon(Icons.check_circle_rounded, size: 16, color: AppColors.medium),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Marked as Recurring Issue • Will track historical recurrence pattern',
+                                  style: TextStyle(fontSize: 11.5, color: AppColors.medium, fontWeight: FontWeight.w700),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                      ] else if (_titleController.text.trim().length >= 4 && !_dismissedRecurringSuggestion) ...[
+                        allIssuesAsync.when(
+                          data: (allIssues) {
+                            final candidate = RecurringIssueDetector.detectRecurringCandidate(
+                              newTitle: _titleController.text.trim(),
+                              newComponentId: _selectedComponentId,
+                              existingIssues: allIssues,
+                            );
+
+                            if (candidate == null) return const SizedBox.shrink();
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: RecurringIssueSuggestionBanner(
+                                match: candidate,
+                                onLinkToPrevious: () {
+                                  setState(() {
+                                    _isRecurring = true;
+                                    _parentIssueId = candidate.matchedIssue.id;
+                                    _dismissedRecurringSuggestion = true;
+                                  });
+                                },
+                                onMarkRecurring: () {
+                                  setState(() {
+                                    _isRecurring = true;
+                                    _dismissedRecurringSuggestion = true;
+                                  });
+                                },
+                                onIgnore: () {
+                                  setState(() => _dismissedRecurringSuggestion = true);
+                                },
+                              ),
+                            );
+                          },
+                          loading: () => const SizedBox.shrink(),
+                          error: (_, _) => const SizedBox.shrink(),
+                        ),
+                      ],
+                      const SizedBox(height: 6),
 
                       // Priority Selection
                       const Text(

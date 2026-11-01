@@ -13,7 +13,9 @@ import '../../issues/domain/issue_model.dart';
 import '../data/service_repository.dart';
 
 class PrepareServiceScreen extends ConsumerStatefulWidget {
-  const PrepareServiceScreen({super.key});
+  final List<String>? preselectedIssueIds;
+
+  const PrepareServiceScreen({super.key, this.preselectedIssueIds});
 
   @override
   ConsumerState<PrepareServiceScreen> createState() => _PrepareServiceScreenState();
@@ -28,6 +30,14 @@ class _PrepareServiceScreenState extends ConsumerState<PrepareServiceScreen> {
   DateTime _appointmentDate = DateTime.now();
   final Set<String> _selectedIssueIds = {};
   bool _isCreating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.preselectedIssueIds != null) {
+      _selectedIssueIds.addAll(widget.preselectedIssueIds!);
+    }
+  }
 
   @override
   void dispose() {

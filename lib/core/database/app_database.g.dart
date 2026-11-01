@@ -133,6 +133,32 @@ class $IssuesTable extends Issues with TableInfo<$IssuesTable, Issue> {
     type: DriftSqlType.string,
     requiredDuringInsert: false,
   );
+  static const VerificationMeta _isRecurringMeta = const VerificationMeta(
+    'isRecurring',
+  );
+  @override
+  late final GeneratedColumn<bool> isRecurring = GeneratedColumn<bool>(
+    'is_recurring',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("is_recurring" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
+  static const VerificationMeta _parentIssueIdMeta = const VerificationMeta(
+    'parentIssueId',
+  );
+  @override
+  late final GeneratedColumn<String> parentIssueId = GeneratedColumn<String>(
+    'parent_issue_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
   static const VerificationMeta _createdAtMeta = const VerificationMeta(
     'createdAt',
   );
@@ -169,6 +195,8 @@ class $IssuesTable extends Issues with TableInfo<$IssuesTable, Issue> {
     status,
     technicianRemarks,
     resolutionNotes,
+    isRecurring,
+    parentIssueId,
     createdAt,
     updatedAt,
   ];
@@ -263,6 +291,24 @@ class $IssuesTable extends Issues with TableInfo<$IssuesTable, Issue> {
         ),
       );
     }
+    if (data.containsKey('is_recurring')) {
+      context.handle(
+        _isRecurringMeta,
+        isRecurring.isAcceptableOrUnknown(
+          data['is_recurring']!,
+          _isRecurringMeta,
+        ),
+      );
+    }
+    if (data.containsKey('parent_issue_id')) {
+      context.handle(
+        _parentIssueIdMeta,
+        parentIssueId.isAcceptableOrUnknown(
+          data['parent_issue_id']!,
+          _parentIssueIdMeta,
+        ),
+      );
+    }
     if (data.containsKey('created_at')) {
       context.handle(
         _createdAtMeta,
@@ -342,6 +388,14 @@ class $IssuesTable extends Issues with TableInfo<$IssuesTable, Issue> {
         DriftSqlType.string,
         data['${effectivePrefix}resolution_notes'],
       ),
+      isRecurring: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}is_recurring'],
+      )!,
+      parentIssueId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}parent_issue_id'],
+      ),
       createdAt: attachedDatabase.typeMapping.read(
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
@@ -379,6 +433,8 @@ class Issue extends DataClass implements Insertable<Issue> {
   final IssueStatus status;
   final String? technicianRemarks;
   final String? resolutionNotes;
+  final bool isRecurring;
+  final String? parentIssueId;
   final DateTime createdAt;
   final DateTime updatedAt;
   const Issue({
@@ -394,6 +450,8 @@ class Issue extends DataClass implements Insertable<Issue> {
     required this.status,
     this.technicianRemarks,
     this.resolutionNotes,
+    required this.isRecurring,
+    this.parentIssueId,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -430,6 +488,10 @@ class Issue extends DataClass implements Insertable<Issue> {
     if (!nullToAbsent || resolutionNotes != null) {
       map['resolution_notes'] = Variable<String>(resolutionNotes);
     }
+    map['is_recurring'] = Variable<bool>(isRecurring);
+    if (!nullToAbsent || parentIssueId != null) {
+      map['parent_issue_id'] = Variable<String>(parentIssueId);
+    }
     map['created_at'] = Variable<DateTime>(createdAt);
     map['updated_at'] = Variable<DateTime>(updatedAt);
     return map;
@@ -455,6 +517,10 @@ class Issue extends DataClass implements Insertable<Issue> {
       resolutionNotes: resolutionNotes == null && nullToAbsent
           ? const Value.absent()
           : Value(resolutionNotes),
+      isRecurring: Value(isRecurring),
+      parentIssueId: parentIssueId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(parentIssueId),
       createdAt: Value(createdAt),
       updatedAt: Value(updatedAt),
     );
@@ -486,6 +552,8 @@ class Issue extends DataClass implements Insertable<Issue> {
         json['technicianRemarks'],
       ),
       resolutionNotes: serializer.fromJson<String?>(json['resolutionNotes']),
+      isRecurring: serializer.fromJson<bool>(json['isRecurring']),
+      parentIssueId: serializer.fromJson<String?>(json['parentIssueId']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
       updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
     );
@@ -512,6 +580,8 @@ class Issue extends DataClass implements Insertable<Issue> {
       ),
       'technicianRemarks': serializer.toJson<String?>(technicianRemarks),
       'resolutionNotes': serializer.toJson<String?>(resolutionNotes),
+      'isRecurring': serializer.toJson<bool>(isRecurring),
+      'parentIssueId': serializer.toJson<String?>(parentIssueId),
       'createdAt': serializer.toJson<DateTime>(createdAt),
       'updatedAt': serializer.toJson<DateTime>(updatedAt),
     };
@@ -530,6 +600,8 @@ class Issue extends DataClass implements Insertable<Issue> {
     IssueStatus? status,
     Value<String?> technicianRemarks = const Value.absent(),
     Value<String?> resolutionNotes = const Value.absent(),
+    bool? isRecurring,
+    Value<String?> parentIssueId = const Value.absent(),
     DateTime? createdAt,
     DateTime? updatedAt,
   }) => Issue(
@@ -551,6 +623,10 @@ class Issue extends DataClass implements Insertable<Issue> {
     resolutionNotes: resolutionNotes.present
         ? resolutionNotes.value
         : this.resolutionNotes,
+    isRecurring: isRecurring ?? this.isRecurring,
+    parentIssueId: parentIssueId.present
+        ? parentIssueId.value
+        : this.parentIssueId,
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
@@ -580,6 +656,12 @@ class Issue extends DataClass implements Insertable<Issue> {
       resolutionNotes: data.resolutionNotes.present
           ? data.resolutionNotes.value
           : this.resolutionNotes,
+      isRecurring: data.isRecurring.present
+          ? data.isRecurring.value
+          : this.isRecurring,
+      parentIssueId: data.parentIssueId.present
+          ? data.parentIssueId.value
+          : this.parentIssueId,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
       updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
     );
@@ -600,6 +682,8 @@ class Issue extends DataClass implements Insertable<Issue> {
           ..write('status: $status, ')
           ..write('technicianRemarks: $technicianRemarks, ')
           ..write('resolutionNotes: $resolutionNotes, ')
+          ..write('isRecurring: $isRecurring, ')
+          ..write('parentIssueId: $parentIssueId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt')
           ..write(')'))
@@ -620,6 +704,8 @@ class Issue extends DataClass implements Insertable<Issue> {
     status,
     technicianRemarks,
     resolutionNotes,
+    isRecurring,
+    parentIssueId,
     createdAt,
     updatedAt,
   );
@@ -639,6 +725,8 @@ class Issue extends DataClass implements Insertable<Issue> {
           other.status == this.status &&
           other.technicianRemarks == this.technicianRemarks &&
           other.resolutionNotes == this.resolutionNotes &&
+          other.isRecurring == this.isRecurring &&
+          other.parentIssueId == this.parentIssueId &&
           other.createdAt == this.createdAt &&
           other.updatedAt == this.updatedAt);
 }
@@ -656,6 +744,8 @@ class IssuesCompanion extends UpdateCompanion<Issue> {
   final Value<IssueStatus> status;
   final Value<String?> technicianRemarks;
   final Value<String?> resolutionNotes;
+  final Value<bool> isRecurring;
+  final Value<String?> parentIssueId;
   final Value<DateTime> createdAt;
   final Value<DateTime> updatedAt;
   final Value<int> rowid;
@@ -672,6 +762,8 @@ class IssuesCompanion extends UpdateCompanion<Issue> {
     this.status = const Value.absent(),
     this.technicianRemarks = const Value.absent(),
     this.resolutionNotes = const Value.absent(),
+    this.isRecurring = const Value.absent(),
+    this.parentIssueId = const Value.absent(),
     this.createdAt = const Value.absent(),
     this.updatedAt = const Value.absent(),
     this.rowid = const Value.absent(),
@@ -689,6 +781,8 @@ class IssuesCompanion extends UpdateCompanion<Issue> {
     this.status = const Value.absent(),
     this.technicianRemarks = const Value.absent(),
     this.resolutionNotes = const Value.absent(),
+    this.isRecurring = const Value.absent(),
+    this.parentIssueId = const Value.absent(),
     required DateTime createdAt,
     required DateTime updatedAt,
     this.rowid = const Value.absent(),
@@ -714,6 +808,8 @@ class IssuesCompanion extends UpdateCompanion<Issue> {
     Expression<int>? status,
     Expression<String>? technicianRemarks,
     Expression<String>? resolutionNotes,
+    Expression<bool>? isRecurring,
+    Expression<String>? parentIssueId,
     Expression<DateTime>? createdAt,
     Expression<DateTime>? updatedAt,
     Expression<int>? rowid,
@@ -731,6 +827,8 @@ class IssuesCompanion extends UpdateCompanion<Issue> {
       if (status != null) 'status': status,
       if (technicianRemarks != null) 'technician_remarks': technicianRemarks,
       if (resolutionNotes != null) 'resolution_notes': resolutionNotes,
+      if (isRecurring != null) 'is_recurring': isRecurring,
+      if (parentIssueId != null) 'parent_issue_id': parentIssueId,
       if (createdAt != null) 'created_at': createdAt,
       if (updatedAt != null) 'updated_at': updatedAt,
       if (rowid != null) 'rowid': rowid,
@@ -750,6 +848,8 @@ class IssuesCompanion extends UpdateCompanion<Issue> {
     Value<IssueStatus>? status,
     Value<String?>? technicianRemarks,
     Value<String?>? resolutionNotes,
+    Value<bool>? isRecurring,
+    Value<String?>? parentIssueId,
     Value<DateTime>? createdAt,
     Value<DateTime>? updatedAt,
     Value<int>? rowid,
@@ -767,6 +867,8 @@ class IssuesCompanion extends UpdateCompanion<Issue> {
       status: status ?? this.status,
       technicianRemarks: technicianRemarks ?? this.technicianRemarks,
       resolutionNotes: resolutionNotes ?? this.resolutionNotes,
+      isRecurring: isRecurring ?? this.isRecurring,
+      parentIssueId: parentIssueId ?? this.parentIssueId,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       rowid: rowid ?? this.rowid,
@@ -818,6 +920,12 @@ class IssuesCompanion extends UpdateCompanion<Issue> {
     if (resolutionNotes.present) {
       map['resolution_notes'] = Variable<String>(resolutionNotes.value);
     }
+    if (isRecurring.present) {
+      map['is_recurring'] = Variable<bool>(isRecurring.value);
+    }
+    if (parentIssueId.present) {
+      map['parent_issue_id'] = Variable<String>(parentIssueId.value);
+    }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
@@ -845,6 +953,8 @@ class IssuesCompanion extends UpdateCompanion<Issue> {
           ..write('status: $status, ')
           ..write('technicianRemarks: $technicianRemarks, ')
           ..write('resolutionNotes: $resolutionNotes, ')
+          ..write('isRecurring: $isRecurring, ')
+          ..write('parentIssueId: $parentIssueId, ')
           ..write('createdAt: $createdAt, ')
           ..write('updatedAt: $updatedAt, ')
           ..write('rowid: $rowid')
@@ -2624,6 +2734,8 @@ typedef $$IssuesTableCreateCompanionBuilder =
       Value<IssueStatus> status,
       Value<String?> technicianRemarks,
       Value<String?> resolutionNotes,
+      Value<bool> isRecurring,
+      Value<String?> parentIssueId,
       required DateTime createdAt,
       required DateTime updatedAt,
       Value<int> rowid,
@@ -2642,6 +2754,8 @@ typedef $$IssuesTableUpdateCompanionBuilder =
       Value<IssueStatus> status,
       Value<String?> technicianRemarks,
       Value<String?> resolutionNotes,
+      Value<bool> isRecurring,
+      Value<String?> parentIssueId,
       Value<DateTime> createdAt,
       Value<DateTime> updatedAt,
       Value<int> rowid,
@@ -2716,6 +2830,16 @@ class $$IssuesTableFilterComposer
 
   ColumnFilters<String> get resolutionNotes => $composableBuilder(
     column: $table.resolutionNotes,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get isRecurring => $composableBuilder(
+    column: $table.isRecurring,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get parentIssueId => $composableBuilder(
+    column: $table.parentIssueId,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2799,6 +2923,16 @@ class $$IssuesTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get isRecurring => $composableBuilder(
+    column: $table.isRecurring,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get parentIssueId => $composableBuilder(
+    column: $table.parentIssueId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
@@ -2867,6 +3001,16 @@ class $$IssuesTableAnnotationComposer
     builder: (column) => column,
   );
 
+  GeneratedColumn<bool> get isRecurring => $composableBuilder(
+    column: $table.isRecurring,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get parentIssueId => $composableBuilder(
+    column: $table.parentIssueId,
+    builder: (column) => column,
+  );
+
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
@@ -2914,6 +3058,8 @@ class $$IssuesTableTableManager
                 Value<IssueStatus> status = const Value.absent(),
                 Value<String?> technicianRemarks = const Value.absent(),
                 Value<String?> resolutionNotes = const Value.absent(),
+                Value<bool> isRecurring = const Value.absent(),
+                Value<String?> parentIssueId = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
                 Value<DateTime> updatedAt = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
@@ -2930,6 +3076,8 @@ class $$IssuesTableTableManager
                 status: status,
                 technicianRemarks: technicianRemarks,
                 resolutionNotes: resolutionNotes,
+                isRecurring: isRecurring,
+                parentIssueId: parentIssueId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
@@ -2948,6 +3096,8 @@ class $$IssuesTableTableManager
                 Value<IssueStatus> status = const Value.absent(),
                 Value<String?> technicianRemarks = const Value.absent(),
                 Value<String?> resolutionNotes = const Value.absent(),
+                Value<bool> isRecurring = const Value.absent(),
+                Value<String?> parentIssueId = const Value.absent(),
                 required DateTime createdAt,
                 required DateTime updatedAt,
                 Value<int> rowid = const Value.absent(),
@@ -2964,6 +3114,8 @@ class $$IssuesTableTableManager
                 status: status,
                 technicianRemarks: technicianRemarks,
                 resolutionNotes: resolutionNotes,
+                isRecurring: isRecurring,
+                parentIssueId: parentIssueId,
                 createdAt: createdAt,
                 updatedAt: updatedAt,
                 rowid: rowid,
