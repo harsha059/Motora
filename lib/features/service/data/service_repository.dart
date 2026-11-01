@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
+import '../../vehicle/data/vehicle_repository.dart';
 import '../domain/service_visit_model.dart';
 
 class ServiceRepository {
@@ -260,22 +261,26 @@ final serviceRepositoryProvider = Provider<ServiceRepository>((ref) {
 
 final allServiceVisitsProvider = StreamProvider<List<ServiceVisitModel>>((ref) {
   final repo = ref.watch(serviceRepositoryProvider);
-  return repo.watchAllVisits();
+  final activeVehicleId = ref.watch(activeVehicleIdProvider);
+  return repo.watchAllVisits(vehicleId: activeVehicleId);
 });
 
 final completedServiceVisitsProvider = StreamProvider<List<ServiceVisitModel>>((ref) {
   final repo = ref.watch(serviceRepositoryProvider);
-  return repo.watchCompletedVisits();
+  final activeVehicleId = ref.watch(activeVehicleIdProvider);
+  return repo.watchCompletedVisits(vehicleId: activeVehicleId);
 });
 
 final latestCompletedVisitProvider = StreamProvider<ServiceVisitModel?>((ref) {
   final repo = ref.watch(serviceRepositoryProvider);
-  return repo.watchLatestCompletedVisit();
+  final activeVehicleId = ref.watch(activeVehicleIdProvider);
+  return repo.watchLatestCompletedVisit(vehicleId: activeVehicleId);
 });
 
 final activeServiceVisitProvider = StreamProvider<ServiceVisitModel?>((ref) {
   final repo = ref.watch(serviceRepositoryProvider);
-  return repo.watchActiveVisit();
+  final activeVehicleId = ref.watch(activeVehicleIdProvider);
+  return repo.watchActiveVisit(vehicleId: activeVehicleId);
 });
 
 final serviceVisitDetailProvider = StreamProvider.family<ServiceVisitDetailModel?, String>((ref, visitId) {
