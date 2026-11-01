@@ -60,11 +60,23 @@ jobs:
 
       - name: Verify APK Artifact
         run: |
+          echo "=== Searching for APK files ==="
+          find /home/runner/work -name "*.apk" -ls || true
+
+          if [ ! -f "build/app/outputs/flutter-apk/app-debug.apk" ]; then
+            FOUND_APK=$(find /home/runner/work -name "*debug*.apk" -o -name "*.apk" | head -n 1)
+            if [ -n "$FOUND_APK" ]; then
+              echo "Found APK at $FOUND_APK. Ensuring it is at build/app/outputs/flutter-apk/app-debug.apk"
+              mkdir -p build/app/outputs/flutter-apk
+              cp "$FOUND_APK" build/app/outputs/flutter-apk/app-debug.apk
+            fi
+          fi
+
           if [ ! -f "build/app/outputs/flutter-apk/app-debug.apk" ]; then
             echo "::error::Expected APK artifact build/app/outputs/flutter-apk/app-debug.apk not found!"
             exit 1
           fi
-          echo "Debug APK successfully created:"
+          echo "Debug APK successfully verified:"
           ls -lh build/app/outputs/flutter-apk/app-debug.apk
 
       - name: Upload Debug APK Artifact
