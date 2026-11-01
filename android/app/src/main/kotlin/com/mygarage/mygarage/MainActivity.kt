@@ -1,0 +1,5 @@
+package com.mygarage.mygarage
+
+import io.flutter.embedding.android.FlutterActivity
+
+class MainActivity : FlutterActivity()
