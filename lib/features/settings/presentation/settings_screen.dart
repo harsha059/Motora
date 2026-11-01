@@ -220,11 +220,48 @@ class SettingsScreen extends ConsumerWidget {
             const SizedBox(height: 24),
 
             // App Information
-            _buildSectionHeader('ABOUT MYGARAGE'),
+            _buildSectionHeader('ABOUT MOTORA'),
             GlassCard(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
+                  Row(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.asset(
+                          'assets/images/app_icon.png',
+                          width: 44,
+                          height: 44,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => const Icon(Icons.directions_car_filled, color: AppColors.accent, size: 36),
+                        ),
+                      ),
+                      const SizedBox(width: 14),
+                      const Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Motora',
+                            style: TextStyle(
+                              fontSize: 17,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.primaryText,
+                            ),
+                          ),
+                          Text(
+                            'Personal Multi-Vehicle Companion',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: AppColors.secondaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  const Divider(),
                   _buildSettingRow(
                     icon: Icons.verified_user_outlined,
                     title: 'Version',

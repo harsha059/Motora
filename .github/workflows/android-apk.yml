@@ -52,11 +52,8 @@ jobs:
           chmod +x android/gradlew
           echo "flutter.sdk=$FLUTTER_ROOT" > android/local.properties
           echo "sdk.dir=$ANDROID_HOME" >> android/local.properties
-          flutter build apk --debug --verbose 2>&1 | tee build_apk.log || {
-            echo "::error::Flutter build apk failed! Printing failure log:"
-            tail -n 100 build_apk.log
-            exit 1
-          }
+          yes | flutter doctor --android-licenses || true
+          flutter build apk --debug
 
       - name: Verify APK Artifact
         run: |
