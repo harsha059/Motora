@@ -234,7 +234,7 @@ class SettingsScreen extends ConsumerWidget {
                           width: 44,
                           height: 44,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => const Icon(Icons.directions_car_filled, color: AppColors.accent, size: 36),
+                          errorBuilder: (context, error, stackTrace) => const Icon(Icons.directions_car_filled, color: AppColors.accent, size: 36),
                         ),
                       ),
                       const SizedBox(width: 14),
