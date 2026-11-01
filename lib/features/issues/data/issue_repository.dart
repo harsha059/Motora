@@ -3,6 +3,7 @@ import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
+import '../../vehicle/data/vehicle_repository.dart';
 import '../domain/issue_model.dart';
 
 class IssueRepository {
@@ -261,17 +262,20 @@ final issueRepositoryProvider = Provider<IssueRepository>((ref) {
 
 final allIssuesProvider = StreamProvider<List<IssueModel>>((ref) {
   final repo = ref.watch(issueRepositoryProvider);
-  return repo.watchAllIssues();
+  final activeVehicleId = ref.watch(activeVehicleIdProvider);
+  return repo.watchAllIssues(vehicleId: activeVehicleId);
 });
 
 final recentIssuesProvider = StreamProvider<List<IssueModel>>((ref) {
   final repo = ref.watch(issueRepositoryProvider);
-  return repo.watchRecentIssues(limit: 5);
+  final activeVehicleId = ref.watch(activeVehicleIdProvider);
+  return repo.watchRecentIssues(limit: 5, vehicleId: activeVehicleId);
 });
 
 final openIssuesProvider = StreamProvider<List<IssueModel>>((ref) {
   final repo = ref.watch(issueRepositoryProvider);
-  return repo.watchOpenIssues();
+  final activeVehicleId = ref.watch(activeVehicleIdProvider);
+  return repo.watchOpenIssues(vehicleId: activeVehicleId);
 });
 
 final issueServiceHistoryProvider = FutureProvider.family<List<IssueServiceHistoryRecord>, String>((ref, issueId) {

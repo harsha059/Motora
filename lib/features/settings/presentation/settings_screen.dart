@@ -1,12 +1,51 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/glass_card.dart';
+import '../../reminders/services/notification_service.dart';
+import '../../vehicle/data/vehicle_repository.dart';
 
-class SettingsScreen extends StatelessWidget {
+// State Providers for User Personalisation Settings
+class DistanceUnitNotifier extends Notifier<String> {
+  @override
+  String build() => 'Kilometers (km)';
+
+  void setUnit(String unit) => state = unit;
+}
+
+final distanceUnitProvider = NotifierProvider<DistanceUnitNotifier, String>(() => DistanceUnitNotifier());
+
+class DateFormatNotifier extends Notifier<String> {
+  @override
+  String build() => 'dd/MM/yyyy';
+
+  void setFormat(String format) => state = format;
+}
+
+final dateFormatProvider = NotifierProvider<DateFormatNotifier, String>(() => DateFormatNotifier());
+
+class NotificationsEnabledNotifier extends Notifier<bool> {
+  @override
+  bool build() => true;
+
+  void toggle(bool enabled) => state = enabled;
+}
+
+final notificationsEnabledProvider =
+    NotifierProvider<NotificationsEnabledNotifier, bool>(() => NotificationsEnabledNotifier());
+
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final activeVehicle = ref.watch(activeVehicleProvider);
+    final distanceUnit = ref.watch(distanceUnitProvider);
+    final dateFormat = ref.watch(dateFormatProvider);
+    final notifsEnabled = ref.watch(notificationsEnabledProvider);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
@@ -16,105 +55,164 @@ class SettingsScreen extends StatelessWidget {
         child: ListView(
           padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
           children: [
-            // Vehicle Information Section
-            _buildSectionHeader('VEHICLE PROFILE'),
+            // Vehicle Profile & Multi-Vehicle Section
+            _buildSectionHeader('VEHICLE PROFILE & FLEET'),
             GlassCard(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
-                  _buildSettingRow(
-                    icon: Icons.electric_car_rounded,
-                    title: 'Vehicle Model',
-                    subtitle: 'MG Comet EV (2024)',
-                  ),
-                  const Divider(),
-                  _buildSettingRow(
-                    icon: Icons.battery_charging_full_rounded,
-                    title: 'Battery Capacity',
-                    subtitle: '17.3 kWh Lithium-ion (Prismatic Cells)',
-                  ),
-                  const Divider(),
-                  _buildSettingRow(
-                    icon: Icons.speed_rounded,
-                    title: 'Odometer (Current)',
-                    subtitle: '4,280 km',
-                  ),
-                  const Divider(),
-                  _buildSettingRow(
-                    icon: Icons.confirmation_number_outlined,
-                    title: 'VIN / Chassis Identifier',
-                    subtitle: 'MBL-EVCOMET-2024-0891',
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            // Appearance & Themes
-            _buildSectionHeader('INTERFACE & THEME'),
-            GlassCard(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  _buildSettingRow(
-                    icon: Icons.dark_mode_rounded,
-                    title: 'Theme Mode',
-                    subtitle: 'Automotive Cyber Dark (Fixed)',
-                    trailing: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.accentDim,
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: const Text(
-                        'DARK',
-                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, color: AppColors.accent),
+                  InkWell(
+                    onTap: () => context.push('/vehicles'),
+                    child: _buildSettingRow(
+                      icon: Icons.garage_rounded,
+                      title: 'Active Vehicle Profile',
+                      subtitle: activeVehicle != null
+                          ? '${activeVehicle.nickname} (${activeVehicle.manufacturer} ${activeVehicle.model})'
+                          : 'MG Comet EV (Plush)',
+                      trailing: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Manage', style: TextStyle(fontSize: 12, color: AppColors.accent, fontWeight: FontWeight.w600)),
+                          SizedBox(width: 4),
+                          Icon(Icons.arrow_forward_ios_rounded, size: 12, color: AppColors.accent),
+                        ],
                       ),
                     ),
                   ),
                   const Divider(),
-                  _buildSettingRow(
-                    icon: Icons.color_lens_outlined,
-                    title: 'Accent Palette',
-                    subtitle: 'Electric Cyan (#36E1BD)',
+                  InkWell(
+                    onTap: () => context.push('/odometer'),
+                    child: _buildSettingRow(
+                      icon: Icons.speed_rounded,
+                      title: 'Odometer History Log',
+                      subtitle: activeVehicle != null
+                          ? '${NumberFormat('#,###').format(activeVehicle.currentOdometer)} km recorded'
+                          : '4,280 km',
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.secondaryText),
+                    ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 24),
 
-            // Data & Storage
-            _buildSectionHeader('DATA & EXPORT'),
+            // Smart Reminders & Documents Section
+            _buildSectionHeader('MAINTENANCE & VAULT'),
+            GlassCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  InkWell(
+                    onTap: () => context.push('/reminders'),
+                    child: _buildSettingRow(
+                      icon: Icons.notifications_active_outlined,
+                      title: 'Smart Maintenance Reminders',
+                      subtitle: 'Service intervals, tyre inspection, PUC & insurance renewal',
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.secondaryText),
+                    ),
+                  ),
+                  const Divider(),
+                  InkWell(
+                    onTap: () => context.push('/documents'),
+                    child: _buildSettingRow(
+                      icon: Icons.folder_shared_outlined,
+                      title: 'Vehicle Document Vault',
+                      subtitle: 'Encrypted offline storage for RC, PUC, and Insurance',
+                      trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.secondaryText),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Personalisation & Formatting
+            _buildSectionHeader('PERSONALISATION & PREFERENCES'),
             GlassCard(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   _buildSettingRow(
-                    icon: Icons.storage_rounded,
-                    title: 'Database Engine',
-                    subtitle: 'SQLite via Drift (Offline-first)',
+                    icon: Icons.straighten_rounded,
+                    title: 'Distance Units',
+                    subtitle: distanceUnit,
+                    trailing: DropdownButton<String>(
+                      value: distanceUnit,
+                      dropdownColor: AppColors.elevatedSurface,
+                      underline: const SizedBox.shrink(),
+                      style: const TextStyle(fontSize: 12, color: AppColors.accent, fontWeight: FontWeight.w600),
+                      items: const [
+                        DropdownMenuItem(value: 'Kilometers (km)', child: Text('km')),
+                        DropdownMenuItem(value: 'Miles (mi)', child: Text('miles')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) ref.read(distanceUnitProvider.notifier).setUnit(val);
+                      },
+                    ),
                   ),
                   const Divider(),
+                  _buildSettingRow(
+                    icon: Icons.calendar_month_outlined,
+                    title: 'Date Display Format',
+                    subtitle: dateFormat,
+                    trailing: DropdownButton<String>(
+                      value: dateFormat,
+                      dropdownColor: AppColors.elevatedSurface,
+                      underline: const SizedBox.shrink(),
+                      style: const TextStyle(fontSize: 12, color: AppColors.accent, fontWeight: FontWeight.w600),
+                      items: const [
+                        DropdownMenuItem(value: 'dd/MM/yyyy', child: Text('dd/MM/yyyy')),
+                        DropdownMenuItem(value: 'MM/dd/yyyy', child: Text('MM/dd/yyyy')),
+                        DropdownMenuItem(value: 'yyyy-MM-dd', child: Text('yyyy-MM-dd')),
+                      ],
+                      onChanged: (val) {
+                        if (val != null) ref.read(dateFormatProvider.notifier).setFormat(val);
+                      },
+                    ),
+                  ),
+                  const Divider(),
+                  _buildSettingRow(
+                    icon: Icons.alarm_on_rounded,
+                    title: 'Local Scheduled Notifications',
+                    subtitle: notifsEnabled ? 'Enabled (Offline Android alarms)' : 'Disabled',
+                    trailing: Switch(
+                      value: notifsEnabled,
+                      activeThumbColor: AppColors.accent,
+                      onChanged: (val) async {
+                        if (val) {
+                          await ref.read(notificationServiceProvider).requestPermissions();
+                        } else {
+                          await ref.read(notificationServiceProvider).cancelAllNotifications();
+                        }
+                        ref.read(notificationsEnabledProvider.notifier).toggle(val);
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 24),
+
+            // Backup & Restore
+            _buildSectionHeader('DATA BACKUP & PRIVACY'),
+            GlassCard(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
                   InkWell(
-                    onTap: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Exporting service logs as PDF/JSON will be available in future release'),
-                        ),
-                      );
-                    },
+                    onTap: () => context.push('/backup'),
                     child: _buildSettingRow(
-                      icon: Icons.file_download_outlined,
-                      title: 'Export Service Log',
-                      subtitle: 'Generate PDF or JSON for technician',
+                      icon: Icons.archive_outlined,
+                      title: 'Offline Backup & Restore',
+                      subtitle: 'Export/import versioned ZIP archives with integrity checks',
                       trailing: const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.secondaryText),
                     ),
                   ),
                   const Divider(),
                   _buildSettingRow(
                     icon: Icons.cloud_off_rounded,
-                    title: 'Cloud Dependencies',
-                    subtitle: 'Zero telemetry / 100% private & local',
+                    title: 'Zero Telemetry & Cloud Freedom',
+                    subtitle: '100% private. All data and files remain locally on your device.',
                   ),
                 ],
               ),
@@ -130,13 +228,13 @@ class SettingsScreen extends StatelessWidget {
                   _buildSettingRow(
                     icon: Icons.verified_user_outlined,
                     title: 'Version',
-                    subtitle: '1.0.0-sprint0 (Build 1)',
+                    subtitle: '1.4.0-sprint4 (Build 4)',
                   ),
                   const Divider(),
                   _buildSettingRow(
                     icon: Icons.code_rounded,
                     title: 'Architecture',
-                    subtitle: 'Flutter 3.44 + Drift SQLite + Riverpod + GoRouter',
+                    subtitle: 'Flutter 3.44 + Drift SQLite v4 + Riverpod + GoRouter',
                   ),
                 ],
               ),

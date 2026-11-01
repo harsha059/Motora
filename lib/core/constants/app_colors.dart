@@ -39,6 +39,10 @@ class AppColors {
   static const Color statusInProgress = Color(0xFF54A0FF);
   static const Color statusResolved = Color(0xFF1DD1A1);
 
+  // Status & Alerts
+  static const Color warning = Color(0xFFFF9F43);
+  static const Color warningDim = Color(0x33FF9F43);
+
   // Gradients
   static const LinearGradient heroCardGradient = LinearGradient(
     begin: Alignment.topLeft,

@@ -9,6 +9,11 @@ import '../../features/service/presentation/service_screen.dart';
 import '../../features/service/presentation/service_visit_detail_screen.dart';
 import '../../features/settings/presentation/settings_screen.dart';
 import '../../features/vehicle/presentation/vehicle_screen.dart';
+import '../../features/backup/presentation/backup_restore_screen.dart';
+import '../../features/documents/presentation/document_vault_screen.dart';
+import '../../features/reminders/presentation/reminders_screen.dart';
+import '../../features/vehicle/presentation/odometer_log_screen.dart';
+import '../../features/vehicle/presentation/vehicle_management_screen.dart';
 import 'scaffold_with_nav_bar.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
@@ -106,6 +111,31 @@ final appRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
         ],
+      ),
+      GoRoute(
+        path: '/vehicles',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const VehicleManagementScreen(),
+      ),
+      GoRoute(
+        path: '/odometer',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const OdometerLogScreen(),
+      ),
+      GoRoute(
+        path: '/reminders',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const RemindersScreen(),
+      ),
+      GoRoute(
+        path: '/documents',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const DocumentVaultScreen(),
+      ),
+      GoRoute(
+        path: '/backup',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const BackupRestoreScreen(),
       ),
     ],
   );
