@@ -1,7 +1,26 @@
 # Motora 🚗⚡
 > **Next-Generation Vehicle Health, 3D Digital Twin & Service Lifecycle Companion**
 
+[![Motora Android APK Build](https://github.com/harsha059/Motora/actions/workflows/android-apk.yml/badge.svg)](https://github.com/harsha059/Motora/actions/workflows/android-apk.yml)
+
 Motora is a premium, offline-first vehicle management application built with **Flutter**, **Drift (SQLite)**, and **Riverpod**. Designed specifically for modern connected and electric vehicles (such as the MG Comet EV), Motora bridges the gap between drivers and service centers through interactive 3D component diagnostics, defect clustering, and service handover reporting.
+
+---
+
+## Download Android APK
+
+Every push and pull request to the `main` branch automatically triggers our continuous integration pipeline to compile and publish the latest Android APK artifact.
+
+### How to Download & Install:
+1. Open the repository's **[Actions](https://github.com/harsha059/Motora/actions)** tab.
+2. Select the latest successful run of **[Motora Android APK Build](https://github.com/harsha059/Motora/actions/workflows/android-apk.yml)**.
+3. Scroll down to the **Artifacts** section at the bottom of the summary page.
+4. Download the **Motora-Android-Debug-APK** artifact.
+5. Extract the downloaded ZIP archive on your computer or device to obtain `app-debug.apk`.
+6. Transfer the APK to an Android phone and install it (enable *"Install unknown apps"* in Android settings if prompted).
+
+> [!NOTE]
+> These are **debug builds** signed with standard Android debug keystores intended for testing, inspection, and review—not for Google Play Store production distribution.
 
 ---
 
