@@ -13,6 +13,7 @@ import '../../../issues/data/issue_repository.dart';
 import '../../../issues/domain/issue_model.dart';
 import '../../../issues/domain/recurring_issue_detector.dart';
 import '../../../issues/presentation/widgets/recurring_issue_suggestion_banner.dart';
+import '../../../vehicle/data/vehicle_repository.dart';
 
 class QuickAddIssueSheet extends ConsumerStatefulWidget {
   final String? initialComponentId;
@@ -89,9 +90,13 @@ class _QuickAddIssueSheetState extends ConsumerState<QuickAddIssueSheet> {
     try {
       final now = DateTime.now();
       final issueId = const Uuid().v4();
+      final activeVehicle = ref.read(activeVehicleProvider);
+      final currentVehicleId = activeVehicle?.id ?? ref.read(activeVehicleIdProvider) ?? 'mg_comet_ev';
+      final currentVehicleName = activeVehicle?.nickname ?? 'Vehicle';
+
       final newIssue = IssueModel(
         id: issueId,
-        vehicleId: 'mg_comet_ev',
+        vehicleId: currentVehicleId,
         componentId: _selectedComponentId,
         title: _titleController.text.trim(),
         description: _descriptionController.text.trim(),
@@ -126,7 +131,7 @@ class _QuickAddIssueSheetState extends ConsumerState<QuickAddIssueSheet> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Issue recorded for MG Comet EV',
+                    'Issue recorded for $currentVehicleName',
                     style: const TextStyle(color: AppColors.primaryText, fontWeight: FontWeight.w600),
                   ),
                 ),
